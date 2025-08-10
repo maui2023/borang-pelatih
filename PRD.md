@@ -62,7 +62,9 @@ Pelatih akan isi maklumat berikut:
 * No. Pelatih
 * Nama Institusi
 * Program/Kursus
-* Tempoh Latihan Industri
+* Mula Tempoh Latihan
+* Akhir Tempoh Latihan
+* Tempoh Latihan Industri (Auto calculate)
 * Alamat Rumah
 * No Akaun
 * Nama Bank
@@ -199,8 +201,6 @@ Pelatih akan isi maklumat berikut:
 | 4      | Approval + PDF Generator + hantar PDF ke pelatih |
 
 ---
-
-Jika anda mahu, saya boleh bantu **bangunkan kod permulaan** untuk komponen seperti:
 
 * Form PHP untuk pelatih
 * Fungsi generate token

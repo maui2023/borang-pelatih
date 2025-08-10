@@ -102,7 +102,7 @@ Sistem ini dibina menggunakan **PHP 8.4**, **MySQL**, dan **Bootstrap 5.3** untu
 
 ---
 
-## 📄 Lisensi
+## 📄 Lesen
 
 Sistem ini dibangunkan untuk tujuan dalaman organisasi dan boleh diubah suai mengikut keperluan.
 
