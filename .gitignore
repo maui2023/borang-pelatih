@@ -3,5 +3,8 @@ TODO.md
 .user.ini
 PRD.md
 pdf_viewer.php
+<<<<<<< HEAD
 *.pdf
+=======
+>>>>>>> b59aeccbb9c6b54627c5973b262aaef2a148b3bc
 vendor/
