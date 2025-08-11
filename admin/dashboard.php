@@ -10,6 +10,9 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 
 $generated_token = null;
 $whatsapp_link = null;
+$user_password = null;
+$success_message = null;
+$error_message = null;
 
 // Handle token generation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_token'])) {
@@ -22,14 +25,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_token'])) {
     $stmt = $pdo->prepare("INSERT INTO tokens (name, phone_number, token) VALUES (?, ?, ?)");
     if ($stmt->execute([$name, $phone_number, $token])) {
         $generated_token = $token;
-        $registration_link = "https://{$_SERVER['HTTP_HOST']}" . dirname($_SERVER['PHP_SELF'], 2) . "pelatih/register.php?token=$token";
+        $registration_link = "https://{$_SERVER['HTTP_HOST']}" . dirname($_SERVER['PHP_SELF'], 2) . "/pelatih/register.php?token=$token";
         $whatsapp_number = '6' . preg_replace('/[^0-9]/', '', $phone_number);
-        $whatsapp_link = "https://wa.me/{$whatsapp_number}?text=" . urlencode("Assalamualaikum {$name}, sila klik pautan ini untuk melengkapkan pendaftaran latihan industri anda di Sabily Enterprise: {$registration_link}");
+        $whatsapp_link = "https://wa.me/{$whatsapp_number}?text=" . urlencode("Assalamualaikum {$name}, sila klik pautan ini untuk melengkapkan pendaftaran latihan industri anda di Sabily Enterprise: {$registration_link}.");
         $success_message = "Token generated successfully.";
     } else {
         $error_message = "Failed to generate token.";
     }
 }
+
+// Handle resending offer letter
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resend_offer'])) {
+    $registration_id = $_POST['resend_offer'];
+
+    $stmt = $pdo->prepare("SELECT * FROM registrations WHERE id = ? AND status = 'Approved'");
+    $stmt->execute([$registration_id]);
+    $registration = $stmt->fetch();
+
+    if ($registration) {
+        require_once __DIR__ . '/../pdf/surat_generator.php';
+        $pdf_result = generateOfferLetter($registration_id);
+        $pdf_path = $pdf_result['file_path'];
+        $user_password = $pdf_result['user_password'];
+
+        $update_stmt = $pdo->prepare("UPDATE registrations SET offer_letter_path = ? WHERE id = ?");
+        if ($pdf_path && $update_stmt->execute([$pdf_path, $registration_id])) {
+            $whatsapp_number = '6' . preg_replace('/[^0-9]/', '', $registration['phone_number']);
+            $offer_letter_url = "https://{$_SERVER['HTTP_HOST']}/uploads/offers/" . basename($pdf_path);
+            $whatsapp_message = urlencode("Assalamualaikum {$registration['name']}, your offer letter is ready. You can download it here: {$offer_letter_url}. Your PDF password is: {$user_password}");
+            $whatsapp_link_resend = "https://wa.me/{$whatsapp_number}?text={$whatsapp_message}";
+            $success_message = "New offer letter generated for {$registration['name']}.";
+        } else {
+            $error_message = "Failed to generate new offer letter.";
+        }
+    } else {
+        $error_message = "Approved registration not found.";
+    }
+}
+
 
 // Fetch registrations for display
 $pending_stmt = $pdo->query("SELECT * FROM registrations WHERE status = 'Pending' ORDER BY submitted_at DESC");
@@ -72,12 +105,24 @@ $unregistered_tokens = $unregistered_tokens_stmt->fetchAll();
     </nav>
 
     <div class="container mt-4">
+        <?php if ($success_message): ?>
+            <div class="alert alert-success">
+                <?php echo $success_message; ?>
+                <?php if (isset($whatsapp_link_resend)): ?>
+                    <a href="<?php echo $whatsapp_link_resend; ?>" target="_blank" class="btn btn-sm btn-success">Send via WhatsApp</a>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+        <?php if ($error_message): ?>
+            <div class="alert alert-danger"><?php echo $error_message; ?></div>
+        <?php endif; ?>
+
         <div class="row">
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Generate Token</h5>
-                        <?php if (isset($success_message)): ?>
+                        <?php if (isset($success_message) && isset($_POST['generate_token'])): ?>
                             <div class="alert alert-success"><?php echo $success_message; ?></div>
                         <?php endif; ?>
                         <?php if ($generated_token): ?>
@@ -86,7 +131,7 @@ $unregistered_tokens = $unregistered_tokens_stmt->fetchAll();
                                 <a href="<?php echo $whatsapp_link; ?>" target="_blank" class="btn btn-success">Send via WhatsApp</a>
                             </div>
                         <?php endif; ?>
-                        <?php if (isset($error_message)): ?>
+                        <?php if (isset($error_message) && isset($_POST['generate_token'])): ?>
                             <div class="alert alert-danger"><?php echo $error_message; ?></div>
                         <?php endif; ?>
                         <form action="dashboard.php" method="POST">
@@ -122,11 +167,11 @@ $unregistered_tokens = $unregistered_tokens_stmt->fetchAll();
                                     <td><?php echo htmlspecialchars($token_data['phone_number']); ?></td>
                                     <td>
                                         <?php
-                                        $registration_link = "https://{$_SERVER['HTTP_HOST']}" . dirname($_SERVER['PHP_SELF'], 2) . "pelatih/register.php?token={$token_data['token']}";
+                                        $registration_link = "https://{$_SERVER['HTTP_HOST']}" . dirname($_SERVER['PHP_SELF'], 2) . "/pelatih/register.php?token={$token_data['token']}";
                                         $whatsapp_number = '6' . preg_replace('/[^0-9]/', '', $token_data['phone_number']);
-                                        $whatsapp_link = "https://wa.me/{$whatsapp_number}?text=" . urlencode("Assalamualaikum {$token_data['name']}, sila klik pautan ini untuk melengkapkan pendaftaran latihan industri anda di Sabily Enterprise: {$registration_link}");
+                                        $whatsapp_link_unregistered = "https://wa.me/{$whatsapp_number}?text=" . urlencode("Assalamualaikum {$token_data['name']}, sila klik pautan ini untuk melengkapkan pendaftaran latihan industri anda di Sabily Enterprise: {$registration_link}");
                                         ?>
-                                        <a href="<?php echo $whatsapp_link; ?>" target="_blank" class="btn btn-sm btn-success">Send (whatsapp)</a>
+                                        <a href="<?php echo $whatsapp_link_unregistered; ?>" target="_blank" class="btn btn-sm btn-success">Send (whatsapp)</a>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -178,13 +223,13 @@ $unregistered_tokens = $unregistered_tokens_stmt->fetchAll();
                                     <td><?php echo htmlspecialchars($reg['institution_name']); ?></td>
                                     <td><?php echo $reg['submitted_at']; ?></td>
                                     <td>
-                                        <?php
-                                        $whatsapp_number = '6' . preg_replace('/[^0-9]/', '', $reg['phone_number']);
-                                        $offer_letter_url = "https://{$_SERVER['HTTP_HOST']}/uploads/offers/" . basename($reg['offer_letter_path']);
-                                        $whatsapp_message = urlencode("Assalamualaikum {$reg['name']}, your offer letter is ready. You can download it here: {$offer_letter_url}");
-                                        $whatsapp_link = "https://wa.me/{$whatsapp_number}?text={$whatsapp_message}";
-                                        ?>
-                                        <a href='<?php echo $whatsapp_link; ?>' target='_blank' class='btn btn-sm btn-info'>Send Offer Letter via WhatsApp</a>
+                                        <form action="dashboard.php" method="POST" style="display: inline;">
+                                            <input type="hidden" name="resend_offer" value="<?php echo $reg['id']; ?>">
+                                            <button type="submit" class="btn btn-sm btn-info">Resend WhatsApp</button>
+                                        </form>
+                                        <?php if (!empty($reg['offer_letter_path'])): ?>
+                                            <a href="../uploads/offers/<?php echo htmlspecialchars(basename($reg['offer_letter_path'])); ?>" target="_blank" class="btn btn-sm btn-secondary">View Letter</a>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>

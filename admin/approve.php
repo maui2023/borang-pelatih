@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Send PDF via WhatsApp
             $whatsapp_number = '6' . preg_replace('/[^0-9]/', '', $registration['phone_number']);
             $offer_letter_url = "https://{$_SERVER['HTTP_HOST']}/uploads/offers/" . basename($pdf_path);
-            $whatsapp_message = urlencode("Assalamualaikum {$registration['name']}, your offer letter is ready. You can download it here: {$offer_letter_url}. Your PDF password is: {$user_password}");
+            $whatsapp_message = urlencode("Assalamualaikum {$registration['name']}, your offer letter is ready. You can download it here: {$offer_letter_url} & Your PDF password is: {$user_password}");
             $whatsapp_link = "https://wa.me/{$whatsapp_number}?text={$whatsapp_message}";
             $message .= " <a href='{$whatsapp_link}' target='_blank' class='btn btn-sm btn-info'>Send Offer Letter via WhatsApp</a>";
         } else if (!$pdf_path) {
