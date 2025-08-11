@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance Page</title>
+    <link rel="icon" type="image/png" href="sabily-logo.png" />
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background: black;
+            color: black;
+            text-align: center;
+        }
+
+        .container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+        }
+
+        .container img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+        h1, p {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: black; /* Start with hidden text */
+            transition: color 0.2s ease-in-out;
+        }
+
+        p {
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        .spotlight {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 150px, rgba(0, 0, 0, 1) 300px);
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="sabily-banner.png" alt="Limkokwing University">
+        <h1 id="headline">We'll be back soon!</h1>
+        <p id="message">We’re currently performing some maintenance to improve your experience. We apologize for any inconvenience this may cause. If you’d like to stay updated, feel free to follow us on Twitter. Otherwise, we’ll be back online shortly!<br><br>Thank you for your patience!</p>
+    </div>
+
+    <div class="spotlight" id="spotlight"></div>
+
+    <script>
+        const spotlight = document.getElementById('spotlight');
+        const headline = document.getElementById('headline');
+        const message = document.getElementById('message');
+
+        document.addEventListener('mousemove', (e) => {
+            const spotlightSize = 150;
+            spotlight.style.background = `radial-gradient(circle at ${e.pageX}px ${e.pageY}px, rgba(255, 255, 255, 0.1) ${spotlightSize}px, rgba(0, 0, 0, 1) 300px)`;
+
+            // Check if the mouse is over the text area
+            const rectHeadline = headline.getBoundingClientRect();
+            const rectMessage = message.getBoundingClientRect();
+
+            if (isInSpotlight(e, rectHeadline) || isInSpotlight(e, rectMessage)) {
+                headline.style.color = 'white';
+                message.style.color = 'white';
+            } else {
+                headline.style.color = 'black';
+                message.style.color = 'black';
+            }
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            const spotlightSize = 150;
+            spotlight.style.background = `radial-gradient(circle at ${touch.pageX}px ${touch.pageY}px, rgba(255, 255, 255, 0.1) ${spotlightSize}px, rgba(0, 0, 0, 1) 300px)`;
+        });
+
+        function isInSpotlight(event, rect) {
+            const x = event.pageX;
+            const y = event.pageY;
+            const buffer = 50; // Buffer to make sure text changes slightly before reaching the exact center
+            return (
+                x >= rect.left - buffer &&
+                x <= rect.right + buffer &&
+                y >= rect.top - buffer &&
+                y <= rect.bottom + buffer
+            );
+        }
+    </script>
+</body>
+</html>
