@@ -28,7 +28,7 @@ function generateOfferLetter($registration_id) {
 
     // Generate a random user password
     $user_password = substr(md5(uniqid(rand(), true)), 0, 8);
-    $owner_password = $user_password;
+    $owner_password = 'owner_' . $registration_id;
 
     // Path absolute ke gambar 
     $logoPath = imageToBase64(__DIR__ . '/../includes/sabily.png'); 
@@ -76,14 +76,14 @@ function generateOfferLetter($registration_id) {
                 <tr><td><strong>Tempoh Latihan</strong></td><td>: ' . htmlspecialchars(date('d F Y', strtotime($registration['internship_start']))) . ' hingga ' . htmlspecialchars(date('d F Y', strtotime($registration['internship_end']))) . ' (' . htmlspecialchars($registration['internship_duration']) . ' hari)</td></tr> 
                 <tr><td><strong>Bahagian/Jabatan</strong></td><td>: Teknikal dan Jualan</td></tr> 
                 <tr><td><strong>Waktu Bekerja</strong></td><td>: Isnin - Jumaat (10.00 pagi - 6.00 petang)<br/>: Sabtu (12.00 pagi - 6.00 petang)</td></tr> 
-                <tr><td><strong>Elaun</strong></td><td>: RM 300.00/sebulan (' . htmlspecialchars($registration['bank_name']) . ' - ' . htmlspecialchars($registration['bank_account_number']) . ')</td></tr> 
+                <tr><td><strong>Elaun</strong></td><td>: RM 300.00/sebulan<br/>(Kreditkan ke : ' . htmlspecialchars($registration['bank_name']) . ' - ' . htmlspecialchars($registration['bank_account_number']) . ')</td></tr> 
             </table> 
     
             <p>Sehubungan dengan itu, Tuan/Puan dikehendaki mengesahkan penerimaan tawaran ini dalam tempoh 7 hari bekerja dari tarikh surat ini dengan melengkapkan Borang Latihan Industri pihak Tuan/Puan yang dilampirkan dan mengembalikannya melalui emel kepada: admin@sabily.info</p> 
             <p>Sebarang pertanyaan lanjut boleh dikemukakan kepada:<br> 
             Staff: Salaudin Ahmad<br> 
             Jawatan: Sales Manager<br> 
-            Emel: salaudin@sabily.info<br> 
+            Emel: ahmad@sabily.info<br> 
             No. Telefon: 0167001035</p> 
     
             <p>Kami mengucapkan tahniah dan selamat menjalani latihan industri di Sabily Enterprise</p> 
@@ -100,7 +100,7 @@ function generateOfferLetter($registration_id) {
     
         <div class="footer"> 
             <p>This is an automatically generated letter. No signature is required.</p> 
-        </div>
+            <p>Your PDF password is: <strong>' . $user_password . '</strong></p>
         </div> 
     </body> 
     </html>';
@@ -110,16 +110,17 @@ function generateOfferLetter($registration_id) {
     // (Optional) Setup the paper size and orientation
     $dompdf->setPaper('A4', 'portrait');
 
+    // Set PDF password protection
+    $canvas = $dompdf->getCanvas();
+     $cpdf = $canvas->get_cpdf();
+     file_put_contents('/tmp/dompdf_debug.log', 'Canvas class: ' . get_class($canvas) . "\n", FILE_APPEND);
+     file_put_contents('/tmp/dompdf_debug.log', 'CPDF class: ' . get_class($cpdf) . "\n", FILE_APPEND);
+     $cpdf->setEncryption($user_password, $owner_password, array('print', 'copy', 'modify', 'annot-forms'));
+
     // Render the HTML as PDF
     $dompdf->render();
 
-
-
-    // Set PDF password protection
-     $canvas = $dompdf->getCanvas();
-     $canvas->get_cpdf()->setEncryption($user_password, $owner_password, array('print', 'copy', 'modify', 'annot-forms'));
-
-     // Save the PDF to a file
+    // Save the PDF to a file
     $output_dir = __DIR__ . '/../uploads/offers/';
     if (!is_dir($output_dir)) {
         mkdir($output_dir, 0777, true);
@@ -128,7 +129,7 @@ function generateOfferLetter($registration_id) {
     $file_path = $output_dir . $filename;
     file_put_contents($file_path, $dompdf->output());
 
-    return ['file_path' => $file_path, 'user_password' => $user_password];
+    return $file_path;
 }
 
 ?>

@@ -30,17 +30,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['approve'])) {
         $update_stmt = $pdo->prepare("UPDATE registrations SET status = 'Approved', offer_letter_path = ? WHERE id = ?");
         require_once __DIR__ . '/../pdf/surat_generator.php';
-        $pdf_result = generateOfferLetter($registration_id);
-        $pdf_path = $pdf_result['file_path'];
-        $user_password = $pdf_result['user_password'];
+        $pdf_path = generateOfferLetter($registration_id);
 
         if ($pdf_path && $update_stmt->execute([$pdf_path, $registration_id])) {
             $message = "Application approved successfully. Offer letter generated.";
 
             // Send PDF via WhatsApp
             $whatsapp_number = '6' . preg_replace('/[^0-9]/', '', $registration['phone_number']);
-            $offer_letter_url = "https://{$_SERVER['HTTP_HOST']}/uploads/offers/" . basename($pdf_path);
-            $whatsapp_message = urlencode("Assalamualaikum {$registration['name']}, your offer letter is ready. You can download it here: {$offer_letter_url} & Your PDF password is: {$user_password}");
+            $offer_letter_url = "http://{$_SERVER['HTTP_HOST']}/uploads/offers/" . basename($pdf_path);
+            $whatsapp_message = urlencode("Assalamualaikum {$registration['name']}, your offer letter is ready. You can download it here: {$offer_letter_url}");
             $whatsapp_link = "https://wa.me/{$whatsapp_number}?text={$whatsapp_message}";
             $message .= " <a href='{$whatsapp_link}' target='_blank' class='btn btn-sm btn-info'>Send Offer Letter via WhatsApp</a>";
         } else if (!$pdf_path) {
